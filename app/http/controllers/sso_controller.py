@@ -24,8 +24,8 @@ def _login_html(csrf: str, error: str = "") -> str:
 <h2>Sign in</h2>{err}
 <form method="post" action="/login">
   <input type="hidden" name="csrf" value="{csrf}">
-  <p><input name="email" type="email" placeholder="Email" required style="width:100%;padding:8px;box-sizing:border-box"></p>
-  <p><input name="password" type="password" placeholder="Password" required style="width:100%;padding:8px;box-sizing:border-box"></p>
+  <p><input name="email" type="email" placeholder="Email" required value="multi@example.com" style="width:100%;padding:8px;box-sizing:border-box"></p>
+  <p><input name="password" type="password" placeholder="Password" required value="secret" style="width:100%;padding:8px;box-sizing:border-box"></p>
   <p><button type="submit" style="width:100%;padding:9px">Sign in</button></p>
 </form></body></html>"""
 

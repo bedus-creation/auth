@@ -41,10 +41,10 @@ Each tenant is a **client**, registered in the IdP's config with a `client_id`, 
 ### Sequence
 ```
 1. user → tenant-a.com (no local session)
-2. tenant-a redirects browser → IdP/authorize?client_id=tenant_a
+2. tenant-a redirects browser → IdP/authorize?client_id=tenant-a
         &redirect_uri=https://tenant-a.com/auth/callback&response_type=code&state=<random>
 3. IdP: valid session? no → login page → user authenticates → idp_session cookie set
-        member of tenant_a? no → 403
+        member of tenant-a? no → 403
 4. IdP redirects → https://tenant-a.com/auth/callback?code=<code>&state=<random>
 5. tenant-a /auth/callback: check state, then BACK-CHANNEL:
         POST IdP/token {grant_type, code, client_id, client_secret, redirect_uri} → {access_token}
@@ -171,7 +171,7 @@ For services that prefer a remote check instead of verifying locally.
 Success `200`:
 ```json
 { "valid": true, "claims": { "sub": "1", "tenant": "tenant-a",
-  "email": "admin@tenant-a.com", "iat": 1780000000, "exp": 1780003600 } }
+  "email": "multi@example.com", "iat": 1780000000, "exp": 1780003600 } }
 ```
 `401` if the token is invalid or expired.
 
@@ -180,8 +180,8 @@ Success `200`:
 ```json
 {
   "sub":    "1",                  // identity id (string)
-  "tenant": "tenant-a",           // tenant slug — scope your data by this
-  "email":  "admin@tenant-a.com",
+  "tenant": "tenant-a",           // tenant slug this token is FOR — scope data by this
+  "email":  "multi@example.com",
   "iat":    1780000000,           // issued-at (unix seconds)
   "exp":    1780003600            // expiry (iat + JWT_TTL)
 }

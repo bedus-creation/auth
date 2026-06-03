@@ -29,13 +29,14 @@ class AuthConfig:
     admin_secret: str = field(default_factory=lambda: env("ADMIN_SECRET", "dev-admin-secret"))
 
     # --- OAuth client registry: client_id -> {tenant slug, redirect_uris, secret} ---
+    # client_id is intentionally identical to the tenant slug (hyphen form).
     clients: dict = field(default_factory=lambda: {
-        "tenant_a": {
+        "tenant-a": {
             "tenant": "tenant-a",
             "redirect_uris": _csv(env("TENANT_A_REDIRECT_URIS", "http://localhost/auth/callback")),
             "secret": env("TENANT_A_CLIENT_SECRET", "tenant-a-client-secret"),
         },
-        "tenant_b": {
+        "tenant-b": {
             "tenant": "tenant-b",
             "redirect_uris": _csv(env("TENANT_B_REDIRECT_URIS", "http://localhost/auth/callback")),
             "secret": env("TENANT_B_CLIENT_SECRET", "tenant-b-client-secret"),
