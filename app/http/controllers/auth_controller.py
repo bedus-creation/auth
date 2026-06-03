@@ -3,7 +3,6 @@ from fastapi import Depends, HTTPException
 from app.http.dependencies.auth import auth
 from app.http.schemas.auth import LoginRequest, TokenResponse, VerifyRequest
 from app.models.identity import Identity
-from app.models.tenant import Tenant
 from app.services import hashing
 from app.services.jwt_service import get_jwt_service
 
@@ -19,13 +18,8 @@ class AuthController:
         # Generic 401 on every failure so we never reveal which field was wrong.
         invalid = HTTPException(status_code=401, detail="Invalid credentials")
 
-        tenant = await Tenant.where("slug", data.tenant).first()
-        if tenant is None:
-            raise invalid
-        tenant_id = _pk(tenant.id)
-
         identity = (
-            await Identity.where("tenant_id", tenant_id)
+            await Identity.where("tenant", data.tenant)
             .where("email", data.email)
             .first()
         )
@@ -37,8 +31,7 @@ class AuthController:
         jwt_service = get_jwt_service()
         token = jwt_service.issue(
             subject=_pk(identity.id),
-            tenant=tenant.slug,
-            tenant_id=tenant_id,
+            tenant=identity.tenant,
             email=identity.email,
         )
         return TokenResponse(access_token=token, expires_in=jwt_service.ttl)
@@ -50,7 +43,7 @@ class AuthController:
             raise HTTPException(status_code=404, detail="Identity not found")
         return {
             "id": _pk(identity.id),
-            "tenant_id": identity.tenant_id,
+            "tenant": identity.tenant,
             "email": identity.email,
             "name": identity.name,
             "is_active": identity.is_active,

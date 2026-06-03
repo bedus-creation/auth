@@ -15,24 +15,34 @@ success, issues an HS256 JWT that tenant services verify with the shared
 
 ## Quick start
 
+Local dev runs on SQLite — no database server required.
+
 ```bash
 uv sync
+cp .env.example .env                  # set JWT_SECRET; SQLite is the default
 
-# Postgres (or use your own):
-docker run -d --name auth-pg \
-  -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=auth_db \
-  -p 5432:5432 postgres:16
-
-cp .env.example .env            # set JWT_SECRET + DB_* to taste
-
-python artisan db:migrate       # create tenants + identity tables
-python artisan seed             # seed tenant-a / tenant-b + demo identities
-python artisan serve            # http://127.0.0.1:8000
+uv run python artisan db:migrate      # create tenants + identity tables
+uv run python artisan db:seed         # seed tenant-a / tenant-b + demo identities
+uv run python artisan serve --port 8000
 
 curl -s -X POST localhost:8000/auth/login \
   -H 'Content-Type: application/json' \
   -d '{"tenant":"tenant-a","email":"admin@tenant-a.com","password":"secret"}'
 ```
+
+Demo identities (password `secret`): `admin@tenant-a.com`, `user@tenant-a.com`,
+`admin@tenant-b.com`.
+
+### Using Postgres instead
+
+```bash
+docker run -d --name auth-pg \
+  -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=auth_db \
+  -p 5432:5432 postgres:16
+```
+
+Then in `.env` set `DB_CONNECTION=postgres` and the `DB_HOST/DB_PORT/DB_DATABASE/
+DB_USERNAME/DB_PASSWORD` vars, and re-run `db:migrate` + `db:seed`.
 
 The issued token is a standard HS256 JWT — any compliant library (PyJWT,
 `firebase/php-jwt`, jsonwebtoken, ...) can verify it with the shared secret.

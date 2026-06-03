@@ -24,7 +24,6 @@ class JwtService:
         *,
         subject: Any,
         tenant: str,
-        tenant_id: int,
         email: str,
         extra: Optional[dict] = None,
     ) -> str:
@@ -32,7 +31,6 @@ class JwtService:
         payload = {
             "sub": str(subject),
             "tenant": tenant,
-            "tenant_id": tenant_id,
             "email": email,
             "iat": now,
             "exp": now + dt.timedelta(seconds=self.ttl),
