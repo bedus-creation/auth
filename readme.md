@@ -17,7 +17,7 @@ the tenant service verifies locally with the shared `JWT_SECRET`.
 
 ```bash
 uv sync                                  # install deps + provision Python 3.13
-cp .env.example .env                     # adjust JWT_SECRET + ADMIN_SECRET
+cp .env.example .env                     # adjust JWT_SECRET + SESSION_SECRET
 
 uv run python artisan db:migrate         # create tables
 uv run python artisan db:seed            # seed demo tenants + users
@@ -55,7 +55,6 @@ DB_PASSWORD=postgres
 | POST | `/auth/login` | — | `{tenant, email, password}` → JWT |
 | POST | `/auth/verify` | — | Validate a token, return its claims |
 | GET  | `/auth/me` | Bearer | Return the logged-in identity + their tenants |
-| POST | `/tenants/{slug}/members` | `x-admin-secret` header | Add a user to a tenant |
 
 ---
 
@@ -78,11 +77,6 @@ curl -s -X POST http://localhost:7700/auth/login \
 # Authenticated request
 curl -s http://localhost:7700/auth/me \
   -H "Authorization: Bearer <token>"
-
-# Add a user to a tenant
-curl -s -X POST http://localhost:7700/tenants/tenant-b/members \
-  -H "x-admin-secret: dev-admin-secret-change-me" \
-  --data-urlencode email=only-a@example.com
 ```
 
 ---
@@ -115,5 +109,5 @@ See [`docs/tenant-authentication.md`](docs/tenant-authentication.md).
 | Error | Cause | Fix |
 |-------|-------|-----|
 | `401 Invalid credentials` | Wrong email/password or wrong tenant slug | Use `tenant-a` (hyphen), valid account |
-| `403 not a member` | User exists but isn't in that tenant | Add them via `POST /tenants/{slug}/members` |
+| `403 not a member` | User exists but isn't in that tenant | Add the membership row directly in the DB |
 | `401` on JWT verify in tenant | Wrong `JWT_SECRET` | Must match the auth service's `JWT_SECRET` exactly |

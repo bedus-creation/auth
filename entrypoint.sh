@@ -1,6 +1,12 @@
 #!/bin/sh
 set -e
 
+# Bootstrap .env from the example if it doesn't exist yet (fresh environment).
+if [ ! -f /app/.env ]; then
+  echo "▶ No .env found — copying .env.example..."
+  cp /app/.env.example /app/.env
+fi
+
 echo "▶ Running migrations..."
 uv run python artisan db:migrate
 

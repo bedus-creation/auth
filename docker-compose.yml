@@ -2,12 +2,10 @@ services:
 
   auth:
     build:
-      context: ../..
-      dockerfile: tenants/auth/Dockerfile
+      context: .
+      dockerfile: Dockerfile
     ports:
       - "7700:7700"
-    env_file:
-      - .env
     volumes:
       - ./storage:/app/storage   # persist the SQLite file across restarts
     restart: unless-stopped

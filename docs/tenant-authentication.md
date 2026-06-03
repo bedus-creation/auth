@@ -156,11 +156,6 @@ slugs it belongs to (password never included):
 ```
 `401` if the token is missing/invalid/expired.
 
-### `POST /tenants/{slug}/members`  *(admin)*
-
-A tenant grants a global user membership. Header `x-admin-secret: <ADMIN_SECRET>`,
-form field `email` (+ optional `role`). `401` on bad secret, `404` if the user or
-tenant is unknown.
 
 ### `POST /auth/verify`
 
