@@ -57,7 +57,7 @@ class SSOController:
         redirect_uri = request.query_params.get("redirect", "")
 
         if not tenant_slug or not redirect_uri:
-            return JSONResponse({"detail": "tenant and redirect params are required"}, status_code=400)
+            return RedirectResponse(url="/login", status_code=303)
 
         identity_id = request.session.get("identity_id")
 
@@ -72,7 +72,8 @@ class SSOController:
     async def _issue_and_redirect(identity_id: int, tenant_slug: str, redirect_uri: str):
         tenant = await Tenant.where("slug", tenant_slug).first()
         if tenant is None:
-            return JSONResponse({"detail": f"Tenant '{tenant_slug}' not found"}, status_code=404)
+            # Unknown tenant — back to login with a fresh session.
+            return RedirectResponse(url="/login", status_code=303)
 
         member = (
             await Membership.where("identity_id", identity_id)
@@ -80,12 +81,14 @@ class SSOController:
             .first()
         )
         if member is None:
-            return JSONResponse(
-                {"detail": f"You are not a member of {tenant_slug}. Ask an admin to add you."},
-                status_code=403,
-            )
+            # Valid user but not a member of this tenant — show login so they
+            # can sign in with a different account that does have access.
+            return RedirectResponse(url="/login", status_code=303)
 
         identity = await Identity.find(int(identity_id))
+        if identity is None or not identity.is_active:
+            return RedirectResponse(url="/login", status_code=303)
+
         jwt_service = get_jwt_service()
         access_token = jwt_service.issue(
             subject=identity_id, tenant=tenant_slug, email=identity.email
@@ -135,5 +138,8 @@ class SSOController:
 
     @staticmethod
     async def logout(request: Request):
+        redirect_to = request.query_params.get("redirect", "")
         request.session.clear()
+        if redirect_to:
+            return RedirectResponse(url=redirect_to, status_code=303)
         return JSONResponse({"message": "Signed out"})
