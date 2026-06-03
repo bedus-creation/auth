@@ -53,7 +53,8 @@ class SSOController:
     @staticmethod
     async def sso(request: Request):
         """Entry point tenants redirect to. Returns a JWT in the redirect on success."""
-        tenant_slug = request.query_params.get("tenant", "")
+        # Normalise tenant_a -> tenant-a so either convention works.
+        tenant_slug = request.query_params.get("tenant", "").replace("_", "-")
         redirect_uri = request.query_params.get("redirect", "")
 
         if not tenant_slug or not redirect_uri:
@@ -70,9 +71,11 @@ class SSOController:
 
     @staticmethod
     async def _issue_and_redirect(identity_id: int, tenant_slug: str, redirect_uri: str):
+        print(f"[SSO] _issue_and_redirect identity_id={identity_id} tenant={tenant_slug} redirect={redirect_uri}", flush=True)
+
         tenant = await Tenant.where("slug", tenant_slug).first()
         if tenant is None:
-            # Unknown tenant — back to login with a fresh session.
+            print(f"[SSO] FAIL: tenant '{tenant_slug}' not found", flush=True)
             return RedirectResponse(url="/login", status_code=303)
 
         member = (
@@ -81,12 +84,12 @@ class SSOController:
             .first()
         )
         if member is None:
-            # Valid user but not a member of this tenant — show login so they
-            # can sign in with a different account that does have access.
+            print(f"[SSO] FAIL: identity {identity_id} not a member of tenant {tenant_slug} (tenant_id={_pk(tenant.id)})", flush=True)
             return RedirectResponse(url="/login", status_code=303)
 
         identity = await Identity.find(int(identity_id))
         if identity is None or not identity.is_active:
+            print(f"[SSO] FAIL: identity {identity_id} not found or inactive", flush=True)
             return RedirectResponse(url="/login", status_code=303)
 
         jwt_service = get_jwt_service()
