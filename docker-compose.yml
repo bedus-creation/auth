@@ -1,44 +1,13 @@
 services:
 
-  # ── Auth service ────────────────────────────────────────────────────────────
   auth:
     build:
-      context: ../..          # project root (needs packages/ + tenants/auth)
+      context: ../..
       dockerfile: tenants/auth/Dockerfile
     ports:
       - "7700:7700"
     env_file:
       - .env
-    environment:
-      # Override DB to Postgres when the db service is present.
-      DB_CONNECTION: postgres
-      DB_HOST: db
-      DB_PORT: 5432
-      DB_DATABASE: auth_db
-      DB_USERNAME: postgres
-      DB_PASSWORD: postgres
-    depends_on:
-      db:
-        condition: service_healthy
-    restart: unless-stopped
-
-  # ── Postgres ─────────────────────────────────────────────────────────────────
-  db:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: auth_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
     volumes:
-      - pgdata:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"           # expose for local tooling (TablePlus, psql, etc.)
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d auth_db"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
+      - ./storage:/app/storage   # persist the SQLite file across restarts
     restart: unless-stopped
-
-volumes:
-  pgdata:
