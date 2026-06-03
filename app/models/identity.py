@@ -4,10 +4,12 @@ from fastapi_startkit.masoniteorm.models import Model
 
 
 class Identity(Model):
+    """A global user. Email is unique across the whole system; tenant access is
+    granted via the `identity_tenant` membership table (see Membership)."""
+
     __table__ = "identity"
     __hidden__ = ["password"]
 
-    tenant: str
     email: str
     password: Optional[str]
     name: Optional[str]

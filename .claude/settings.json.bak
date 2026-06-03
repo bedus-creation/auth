@@ -1,0 +1,34 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "http",
+            "url": "http://localhost:4545/api/claude-stopped"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "http",
+            "url": "http://localhost:4545/api/claude-started"
+          }
+        ]
+      }
+    ]
+  },
+  "mcpServers": {
+    "keera-agent": {
+      "type": "http",
+      "url": "http://localhost:4545/mcp",
+      "headers": {
+        "X-Project-Path": "/Users/ellite/code/tenants/auth"
+      }
+    }
+  },
+  "defaultMode": "acceptEdits"
+}

@@ -6,18 +6,16 @@ from app.services import hashing
 
 class IdentitySeeder(Seeder):
     async def run(self):
-        # All demo identities share the password "secret".
+        # Global users — email unique across the system. Password is "secret".
         identities = [
-            {"tenant": "tenant-a", "email": "admin@tenant-a.com", "name": "Tenant A Admin"},
-            {"tenant": "tenant-a", "email": "user@tenant-a.com", "name": "Tenant A User"},
-            {"tenant": "tenant-b", "email": "admin@tenant-b.com", "name": "Tenant B Admin"},
+            {"email": "multi@example.com", "name": "Multi Tenant User"},
+            {"email": "only-a@example.com", "name": "Only Tenant A"},
+            {"email": "only-b@example.com", "name": "Only Tenant B"},
         ]
-
         for data in identities:
             await Identity.first_or_create(
-                {"tenant": data["tenant"], "email": data["email"]},
+                {"email": data["email"]},
                 {
-                    "tenant": data["tenant"],
                     "email": data["email"],
                     "name": data["name"],
                     "password": hashing.make("secret"),
