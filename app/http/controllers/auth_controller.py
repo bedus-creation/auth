@@ -1,24 +1,34 @@
 from fastapi import Depends, HTTPException
 
 from app.http.dependencies.auth import auth
-from app.http.schemas.auth import LoginRequest, TokenResponse, VerifyRequest
+from app.http.schemas.auth import LoginRequest, RefreshRequest, TokenResponse, VerifyRequest
 from app.models.identity import Identity
 from app.models.membership import Membership
 from app.models.tenant import Tenant
 from app.services import hashing
+from app.services import refresh_service
 from app.services.jwt_service import get_jwt_service
 
 
 def _pk(value):
-    """masoniteorm + asyncpg can return the inserted PK as {"id": n}; normalise it."""
     return value.get("id") if isinstance(value, dict) else value
 
 
+async def _issue_tokens(identity_id: int, tenant_slug: str, email: str) -> TokenResponse:
+    jwt_service = get_jwt_service()
+    access_token = jwt_service.issue(subject=identity_id, tenant=tenant_slug, email=email)
+    refresh_token = await refresh_service.create(identity_id, tenant_slug)
+    return TokenResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        expires_in=jwt_service.ttl,
+    )
+
+
 class AuthController:
+
     @staticmethod
     async def login(data: LoginRequest) -> TokenResponse:
-        """Direct JSON login for API/SPA clients. Verifies the global identity and
-        that it is a member of the requested tenant, then issues a JWT for it."""
         invalid = HTTPException(status_code=401, detail="Invalid credentials")
 
         identity = await Identity.where("email", data.email).first()
@@ -38,11 +48,23 @@ class AuthController:
         if member is None:
             raise HTTPException(status_code=403, detail="User is not a member of this tenant")
 
-        jwt_service = get_jwt_service()
-        token = jwt_service.issue(
-            subject=_pk(identity.id), tenant=tenant.slug, email=identity.email
-        )
-        return TokenResponse(access_token=token, expires_in=jwt_service.ttl)
+        return await _issue_tokens(_pk(identity.id), tenant.slug, identity.email)
+
+    @staticmethod
+    async def refresh(data: RefreshRequest) -> TokenResponse:
+        """Exchange a refresh token for a new access token + new refresh token
+        (rotation: old token is revoked, new one issued)."""
+        row = await refresh_service.consume(data.refresh_token)
+        if row is None:
+            raise HTTPException(status_code=401, detail="Invalid or expired refresh token")
+
+        identity = await Identity.find(int(row.identity_id))
+        if identity is None or not identity.is_active:
+            raise HTTPException(status_code=401, detail="Identity not found or inactive")
+
+        # Rotate: revoke the used token, issue a fresh pair.
+        await refresh_service.revoke(data.refresh_token)
+        return await _issue_tokens(int(row.identity_id), row.tenant, identity.email)
 
     @staticmethod
     async def me(claims: dict = Depends(auth)) -> dict:

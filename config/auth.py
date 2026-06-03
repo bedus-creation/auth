@@ -6,11 +6,16 @@ from pydantic.dataclasses import dataclass
 
 @dataclass
 class AuthConfig:
-    """JWT settings for issuing and verifying access tokens (HS256)."""
+    """JWT + central session settings."""
 
     jwt_secret: str = field(default_factory=lambda: env("JWT_SECRET", "change-me"))
     jwt_algorithm: str = field(default_factory=lambda: env("JWT_ALGORITHM", "HS256"))
     jwt_ttl: int = field(default_factory=lambda: int(env("JWT_TTL", "3600")))
 
-    # Admin secret for tenant membership management endpoint.
+    # Signs the central session cookie (idp_session).
+    session_secret: str = field(
+        default_factory=lambda: env("SESSION_SECRET", "dev-session-secret-change-me-min-32-bytes")
+    )
+
+    # Admin secret for tenant membership management.
     admin_secret: str = field(default_factory=lambda: env("ADMIN_SECRET", "dev-admin-secret"))
